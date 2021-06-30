@@ -22,14 +22,17 @@ void b64_decode(char *b64src, char *clrdst)
 
     clrdst[0] = '\0';
     phase = 0; i=0;
-    while(b64src[i]) {
+    while(b64src[i])
+    {
         c = (int) b64src[i];
-        if(c == '=') {
+        if(c == '=')
+        {
             decodeblock(in, clrdst);
             break;
         }
         p = strchr(b64, c);
-        if(p) {
+        if(p)
+        {
             in[phase] = p - b64;
             phase = (phase + 1) % 4;
             if(phase == 0) {
@@ -152,3 +155,70 @@ void CustomJWT::encodeJWT(char *string)
     CustomJWT::out = temp;
 }
 
+bool CustomJWT::decodeJWT(char *string)
+{
+    String head = "";
+    String body = "";
+    String sign = "";
+    int i, state = 0;
+    for(i = 0; i < strlen(string); i++)
+    {
+        switch (state)
+        {
+            case 0:
+                if(string[i] == '.')
+                    state++;
+                else
+                    head = head + string[i];
+                break;
+            case 1:
+                if(string[i] == '.')
+                    state++;
+                else
+                    body = body + string[i];
+                break;
+            default:
+                sign = sign + string[i];
+                break;
+        }
+    }
+    String data = head + "." + body;
+    char d1[data.length() + 10]; char b1[body.length() + 10]; char output[body.length()];
+    body = body + '=';
+    body.toCharArray(b1, body.length() + 10);
+    data.toCharArray(d1, data.length() + 10);
+    b64_decode(b1, output);
+    body = output;
+
+    //Convert passkey to unsigned int
+    char* msg1 = CustomJWT::secretKey;
+    size_t length = strlen(msg1 + 1);
+    char* beg = msg1;
+    char* end = msg1 + length + 1;
+    uint8_t* key = new uint8_t[length + 1];
+    size_t j = 0;
+    for (; beg != end; ++beg, ++j)
+    {
+        key[j] = (uint8_t)(*beg);
+    }
+    //Initialise HMAC
+    Sha256.initHmac(key, length + 1);
+    //Obtain result
+    Sha256.print(d1);
+    uint8_t* hash = Sha256.resultHmac();
+    //Encode to b64
+    int len = ((32 + 2)/3)*4;
+    char str1[len];
+    b64_encode(hash, str1);
+    while(str1[strlen(str1) - 1] == '=')
+        str1[strlen(str1) - 1] = '\0';
+
+    CustomJWT::debug = str1;
+    CustomJWT::payload = body;
+    CustomJWT::header = head;
+    CustomJWT::signature = sign;
+    if(String(str1) == sign)
+        return true;
+    else
+        return false;
+}

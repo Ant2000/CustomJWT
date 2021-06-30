@@ -8,9 +8,10 @@ private:
     char* secretKey;
 
 public:
-    char* header;
-    char* payload;
-    char* signature;
+    String header;
+    String payload;
+    String signature;
+    String debug;
     String out;
 
     CustomJWT(char* secret);
@@ -21,7 +22,7 @@ public:
 
     void encodeJWT(char* string);
 
-    void decodeJWT(char* string);
+    bool decodeJWT(char* string);
 
 };
 
