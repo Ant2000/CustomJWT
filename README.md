@@ -1,6 +1,9 @@
-# Arduino ArduinoJWT library
+# Arduino JWT library
 
-A library created to encode and decode JWT on arduino. Encoding and decoding are both working but suffer from memory related issues.
+A library created to encode and decode JWT for Arduino. Tested and working on an arduino UNO. Only supports HMAC-SHA256 for creating signature.
 <br>
 SHA code is a slightly modified version of algorithm found here-
 https://github.com/Cathedrow/Cryptosuite
+<br>
+Information about Java Web Tokens(JWT) can be found here-
+https://jwt.io/

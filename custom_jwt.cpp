@@ -1,6 +1,5 @@
 #include "custom_jwt.h"
 #include "sha256.h"
-#include <Arduino.h>
 
 const char b64[]  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char head[] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
@@ -122,9 +121,13 @@ void CustomJWT::encodeJWT(char *string)
     b64_encode(string, str);
     while(str[strlen(str) - 1] == '=')
         str[strlen(str) - 1] = '\0';
-    String temp = head;
-    temp = temp + ".";
-    temp = temp + str;
+    char temp[strlen(head) + strlen(str) + 10];
+    temp[0] = '\0';
+    strcat(temp, head);
+    strcat(temp, ".");
+    strcat(temp, str);
+    CustomJWT::out = temp;
+
     //Convert passkey to unsigned int
     char* msg1 = CustomJWT::secretKey;
     size_t length = strlen(msg1 + 1);
@@ -139,28 +142,26 @@ void CustomJWT::encodeJWT(char *string)
     //Initialise HMAC
     Sha256.initHmac(key, length + 1);
     //Convert string to char array
-    char temp1[temp.length() + 10];
-    temp.toCharArray(temp1, temp.length() + 10);
-    //Obtain result
-    Sha256.print(temp1);
-    uint8_t* hash = Sha256.resultHmac();
+    Sha256.print(temp);
+    //uint8_t* hash = Sha256.resultHmac();
     //Encode to b64
     len = ((32 + 2)/3)*4;
-    char str1[len];
-    b64_encode(hash, str1);
+    char str1[len + 10];
+    b64_encode(Sha256.resultHmac(), str1);
     while(str1[strlen(str1) - 1] == '=')
         str1[strlen(str1) - 1] = '\0';
-    temp = temp + ".";
-    temp = temp + str1;
-    CustomJWT::out = temp;
+    char temp1[strlen(temp) + strlen(str1) + 10];
+    temp1[0] = '\0';
+    strcat(temp1, temp);
+    strcat(temp1, ".");
+    strcat(temp1, str1);
+    CustomJWT::out = temp1;
 }
 
 bool CustomJWT::decodeJWT(char *string)
 {
-    String head = "";
-    String body = "";
-    String sign = "";
-    int i, state = 0;
+    //strtok is behaving very weirdly with the Arduino UNO so I am going with this long method.
+    uint8_t i, state = 0, headl = 0, bodyl = 0, signl = 0;
     for(i = 0; i < strlen(string); i++)
     {
         switch (state)
@@ -169,26 +170,62 @@ bool CustomJWT::decodeJWT(char *string)
                 if(string[i] == '.')
                     state++;
                 else
-                    head = head + string[i];
+                    headl++;
                 break;
             case 1:
                 if(string[i] == '.')
                     state++;
                 else
-                    body = body + string[i];
+                    bodyl++;
                 break;
             default:
-                sign = sign + string[i];
+                signl++;
                 break;
         }
     }
-    String data = head + "." + body;
-    char d1[data.length() + 10]; char b1[body.length() + 10]; char output[body.length()];
-    body = body + '=';
-    body.toCharArray(b1, body.length() + 10);
-    data.toCharArray(d1, data.length() + 10);
-    b64_decode(b1, output);
-    body = output;
+    char head[headl + 50];//I do not know why this array needs special treatment but it works
+    for(i = 0; i < headl; i++)
+    {
+        head[i] = string[i];
+    }
+    head[headl] = '\0';
+    //CustomJWT::header = head;
+
+    char body[bodyl + 10];
+    for(i = headl + 1; i < (headl + 1 + bodyl); i++)
+    {
+        body[i - (headl + 1)] = string[i];
+    }
+    body[bodyl] = '\0';
+    //CustomJWT::payload = body;
+
+    char sign[signl + 10];
+    for(i = headl + bodyl + 2; i < (headl + bodyl + signl + 2); i++)
+    {
+        sign[i - (headl + bodyl + 2)] = string[i];
+    }
+    sign[signl] = '\0';
+    //CustomJWT::signature = sign;
+
+    char data[headl + bodyl + 20];
+    data[0] = '\0';
+    strcat(data, head);
+    strcat(data, ".");
+    strcat(data, body);
+
+    head[headl] = '=';
+    head[headl + 1] = '\0';
+    char output1[headl];
+    b64_decode(head, output1);
+    strcpy(head, output1);
+    CustomJWT::header = head;
+
+    body[bodyl] = '=';
+    body[bodyl + 1] = '\0';
+    char output[bodyl];
+    b64_decode(body, output);
+    strcpy(body, output);
+    CustomJWT::payload = body;
 
     //Convert passkey to unsigned int
     char* msg1 = CustomJWT::secretKey;
@@ -204,20 +241,17 @@ bool CustomJWT::decodeJWT(char *string)
     //Initialise HMAC
     Sha256.initHmac(key, length + 1);
     //Obtain result
-    Sha256.print(d1);
-    uint8_t* hash = Sha256.resultHmac();
+    Sha256.print(data);
     //Encode to b64
     int len = ((32 + 2)/3)*4;
     char str1[len];
-    b64_encode(hash, str1);
+    b64_encode(Sha256.resultHmac(), str1);
     while(str1[strlen(str1) - 1] == '=')
         str1[strlen(str1) - 1] = '\0';
 
-    CustomJWT::debug = str1;
-    CustomJWT::payload = body;
-    CustomJWT::header = head;
-    CustomJWT::signature = sign;
-    if(String(str1) == sign)
+    CustomJWT::signature = str1;
+
+    if(strcmp(CustomJWT::signature, sign) == 0)
         return true;
     else
         return false;

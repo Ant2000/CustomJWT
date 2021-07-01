@@ -1,18 +1,16 @@
 #ifndef _CUSTOM_JWT_H_
 #define _CUSTOM_JWT_H_
 
-#include <Arduino.h>
 
 class CustomJWT{
 private:
     char* secretKey;
 
 public:
-    String header;
-    String payload;
-    String signature;
-    String debug;
-    String out;
+    char* header;
+    char* payload;
+    char* signature;
+    char* out;
 
     CustomJWT(char* secret);
 
