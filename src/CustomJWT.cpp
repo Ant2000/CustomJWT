@@ -1,4 +1,4 @@
-#include "custom_jwt.h"
+#include "CustomJWT.h"
 #include "sha256.h"
 
 const char b64[]  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
