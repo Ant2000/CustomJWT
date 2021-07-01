@@ -1,4 +1,4 @@
-#include <custom_jwt.h>
+#include <CustomJWT.h>
 
 char key[] = "tester";
 char string[] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW1wIjoyMi41LCJzcGVlZCI6MjUuMX0.t5CfO7HYM0I1sJknkPyCWctTk6tOVBIU07rjcSULDWI";

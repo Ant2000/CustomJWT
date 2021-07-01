@@ -1,4 +1,4 @@
-#include <custom_jwt.h>
+#include <CustomJWT.h>
 
 char key[] = "tester";
 char string[] = "{\"temp\":22.5,\"speed\":25.1}";

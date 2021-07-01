@@ -1,14 +1,19 @@
 #######################################
-# Syntax Coloring Map For ArduinoJWT
+# Syntax Coloring Map For CustomJWT
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
 
+CustomJWT	KEYWORD1
+
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
+
+encodeJWT	KEYWORD2
+decodeJWT	KEYWORD2
 
 ######################################
 # Instances (KEYWORD2)
