@@ -1,6 +1,6 @@
 # Arduino JWT library
 
-A library created to encode and decode JWT for Arduino. Tested and working on an arduino UNO. Only supports HMAC-SHA256 for creating signature.
+A library created to encode and decode JWT for Arduino. Tested and working on an Arduino UNO. Only supports HMAC-SHA256 for creating signature.
 <br>
 SHA code is a slightly modified version of algorithm found here-
 https://github.com/Cathedrow/Cryptosuite
