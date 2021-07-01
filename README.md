@@ -18,7 +18,7 @@ CustomJWT jwt(key);
 ```
 
 <br>
-All inputs to the functions of this library must also be char arrays.<br>
+All inputs to the functions of this library must also be char arrays. Similarly, the outputs are also all char arrays.<br>
 For encoding, the encodeJWT function is used. The output is will be in the object variable "out". The function returns 0.<br>
 For example-<br>
 
