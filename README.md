@@ -9,6 +9,12 @@ Information about Java Web Tokens(JWT) can be found here-
 https://jwt.io/
 <br>
 <h1>Usage</h1>
+To import the library, use:<br>
+
+```
+#include <custom_jwt.h>
+```
+
 First one needs to create a CustomJWT object with the parameter key. The key must be a char array.<br>
 For example-<br>
 
