@@ -1,7 +1,7 @@
 #include "CustomJWT.h"
 #include "sha256.h"
 
-const char b64[]  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const char b64[]  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const char head[] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
 
 void decodeblock(unsigned char in[], char *clrstr) {
