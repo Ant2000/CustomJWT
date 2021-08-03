@@ -12,7 +12,7 @@ https://jwt.io/
 To import the library, use:<br>
 
 ```
-#include <custom_jwt.h>
+#include <CustomJWT.h>
 ```
 
 First one needs to create a CustomJWT object with the parameter key. The key must be a char array.<br>
