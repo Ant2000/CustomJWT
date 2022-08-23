@@ -12,8 +12,10 @@ CustomJWT	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-encodeJWT	KEYWORD2
-decodeJWT	KEYWORD2
+allocateJWTMemory   KEYWORD2
+encodeJWT	        KEYWORD2
+decodeJWT	        KEYWORD2
+clear               KEYWORD2
 
 ######################################
 # Instances (KEYWORD2)

@@ -29,7 +29,20 @@ public:
 
     char *out = nullptr;
     size_t maxOutputLen;
+    size_t outputLength;
 
+    Base64URL b64Handler;
+
+/**
+ * @brief Construct a new CustomJWT object
+ * 
+ * @param secret The Encryption Key
+ * @param maxPayloadLen Maximum expected length of payload
+ * @param maxHeadLen Maximum expected length of header. Defaults to 40.
+ * @param maxSigLen Maximum expected length of signature. Defaults to 32.
+ * @param alg Encryption algorithm used. Defaults to HS256.
+ * @param typ Header type. Defaults to JWT.
+ */
     CustomJWT(char *secret, size_t maxPayloadLen, size_t maxHeadLen = 40, size_t maxSigLen = 32, char *alg = "HS256", char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
@@ -92,6 +105,7 @@ public:
         b64Handler.base64urlEncode(hashed, SHA256_HASH, signature, &signatureLength);
         
         sprintf(out, "%s.%s", toHash, signature);
+        outputLength = strlen(out);
         return true;
     }
 
@@ -149,6 +163,7 @@ public:
         memset(header, 0, sizeof(char) * b64HeaderLen);
         memset(payload, 0, sizeof(char) * b64PayloadLen);
         memset(signature, 0, sizeof(char) * b64SigLen);
+        
         b64Handler.base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
         b64Handler.base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
         sprintf(signature, "%s", b64Signature);
@@ -187,7 +202,6 @@ public:
     }
 
 private:
-    Base64URL b64Handler;
     bool memoryAllocationDone = false;
 };
 

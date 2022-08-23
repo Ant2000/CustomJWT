@@ -2,17 +2,17 @@
 
 char key[] = "tester";
 char string[] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW1wIjoyMi41LCJzcGVlZCI6MjUuMX0.t5CfO7HYM0I1sJknkPyCWctTk6tOVBIU07rjcSULDWI";
-CustomJWT jwt(key);
+CustomJWT jwt(key, 256);
 
 void setup()
 {
     Serial.begin(115200);
+    jwt.allocateJWTMemory();
     Serial.println(jwt.decodeJWT(string));
-    Serial.print(jwt.header);
-    Serial.print(" ");
-    Serial.print(jwt.payload);
-    Serial.print(" ");
-    Serial.println(jwt.signature);
+    Serial.printf("Header: %s\nHeader Length: %d\n", jwt.header, jwt.headerLength);
+    Serial.printf("Payload: %s\nPayload Length: %d\n", jwt.payload, jwt.payloadLength);
+    Serial.printf("Signature: %s\nSignature Length: %d\n", jwt.signature, jwt.signatureLength);
+    jwt.clear();
 }
 
 void loop()
