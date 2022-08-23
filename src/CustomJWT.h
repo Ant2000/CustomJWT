@@ -13,6 +13,7 @@ public:
     uint8_t *secret;
     char *alg;
     char *typ;
+    size_t maxHeadLen;
     size_t maxPayloadLen;
     size_t maxSigLen;
 
@@ -22,38 +23,60 @@ public:
     size_t headerLength;
     size_t payloadLength;
     size_t signatureLength;
+    size_t b64HeaderLen;
+    size_t b64PayloadLen;
+    size_t b64SigLen;
 
     char *out = nullptr;
+    size_t maxOutputLen;
 
-    CustomJWT(char *secret, size_t maxPayloadLen, size_t maxSigLen = 32, char *alg = "HS256", char *typ = "JWT")
+    CustomJWT(char *secret, size_t maxPayloadLen, size_t maxHeadLen = 40, size_t maxSigLen = 32, char *alg = "HS256", char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
         this->typ = typ;
+        this->maxHeadLen = maxHeadLen;
         this->maxPayloadLen = maxPayloadLen;
         this->maxSigLen = maxSigLen;
     }
 
+    /**
+     * @brief Allocate memory for internal char pointers
+     * 
+     */
     void allocateJWTMemory()
     {
-        size_t headerLen = strlen(alg) + strlen(typ) + 30;
-        size_t b64HeaderLen = (size_t)(4.0 * (headerLen / 3.0)) + 5;
-        size_t b64PayloadLen = (size_t)(4.0 * (maxPayloadLen / 3.0)) + 5;
-        size_t b64SigLen = (size_t)(4.0 * (maxSigLen / 3.0)) + 5;
+        b64HeaderLen = (size_t)(4.0 * (maxHeadLen / 3.0)) + 5;
+        b64PayloadLen = (size_t)(4.0 * (maxPayloadLen / 3.0)) + 5;
+        b64SigLen = (size_t)(4.0 * (maxSigLen / 3.0)) + 5;
+        maxOutputLen = (size_t)(b64HeaderLen + b64PayloadLen + b64SigLen + 4);
 
-        header = (char *)calloc(b64HeaderLen, sizeof(char));
-        payload = (char *)calloc(b64PayloadLen, sizeof(char));
-        signature = (char *)calloc(b64SigLen, sizeof(char));
-        out = (char *)calloc(b64HeaderLen + b64PayloadLen + b64SigLen + 4, sizeof(char));
+        header = (char *)malloc(b64HeaderLen * sizeof(char));
+        payload = (char *)malloc(b64PayloadLen * sizeof(char));
+        signature = (char *)malloc(b64SigLen * sizeof(char));
+        out = (char *)malloc(maxOutputLen * sizeof(char));
+
+        memoryAllocationDone = true;
     }
 
-    void encodeJWT(char *string)
+    /**
+     * @brief Encode given string into JWT. Final output stored in out. 
+     * 
+     * @param string Data to be encoded
+     * @return true: Encoding success
+     * @return false: Memory not allocated
+     */
+    bool encodeJWT(char *string)
     {
-        memset(header, 0, sizeof(header));
-        memset(payload, 0, sizeof(payload));
-        memset(signature, 0, sizeof(signature));
+        if(!memoryAllocationDone)
+            return false;
 
-        char headerJSON[strlen(alg) + strlen(typ) + 30];
+        memset(header, 0, sizeof(char) * b64HeaderLen);
+        memset(payload, 0, sizeof(char) * b64PayloadLen);
+        memset(signature, 0, sizeof(char) * b64SigLen);
+        memset(out, 0, sizeof(char) * maxOutputLen);
+
+        char headerJSON[maxHeadLen];
         sprintf(headerJSON, "{\"alg\": \"%s\",\"typ\":\"%s\"}", alg, typ);
         b64Handler.base64urlEncode(headerJSON, strlen(headerJSON), header, &headerLength);
 
@@ -69,14 +92,75 @@ public:
         b64Handler.base64urlEncode(hashed, SHA256_HASH, signature, &signatureLength);
         
         sprintf(out, "%s.%s", toHash, signature);
-        return;
-    }
-
-    bool decodeJWT(char *string)
-    {
         return true;
     }
 
+    /**
+     * @brief Validate and decode JWT. Result stored int header, payload and signature.
+     * 
+     * @param string JWT to be decoded
+     * @returns Code 0: Decode success \n Code 1: Memory not allocated \n Code 2: Invalid JWT \n Code 3: Signature Mismatch
+     */
+    int decodeJWT(char *string)
+    {
+        if(!memoryAllocationDone)
+            return 1;
+        
+        const char* delimiter = ".";
+        char* b64Head;
+        char* b64Payload;
+        char* b64Signature;
+
+        
+        b64Head = strtok(string, delimiter);
+        if(b64Head == 0)
+            return 2;
+        b64Payload = strtok(0, delimiter);
+        if(b64Payload == 0)
+            return 2;
+        b64Signature = strtok(0, delimiter);
+        if(b64Signature == 0)
+            return 2;
+        if(strtok(0, delimiter) != 0)
+            return 2;
+
+        uint8_t hashed[SHA256_HASH];
+        memset(hashed, 0, SHA256_HASH);
+        
+        char toCheckHash[strlen(b64Head) + strlen(b64Payload) + 3];
+        memset(toCheckHash, 0, sizeof(toCheckHash));
+
+        char testSignature[strlen(b64Signature)];
+        memset(testSignature, 0, sizeof(testSignature));
+        size_t testSignatureLength;
+
+        sprintf(toCheckHash, "%s.%s", b64Head, b64Payload);
+        hmac<SHA256>(hashed, SHA256_HASH, secret, strlen((char *)secret), toCheckHash, strlen(toCheckHash));
+        b64Handler.base64urlEncode(hashed, SHA256_HASH, testSignature, &testSignatureLength);
+
+        if(testSignatureLength != strlen(b64Signature)){
+            return 3;
+        }
+
+        if(strncmp(b64Signature, testSignature, testSignatureLength) != 0) {
+            return 3;
+        }
+
+        memset(header, 0, sizeof(char) * b64HeaderLen);
+        memset(payload, 0, sizeof(char) * b64PayloadLen);
+        memset(signature, 0, sizeof(char) * b64SigLen);
+        b64Handler.base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
+        b64Handler.base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
+        sprintf(signature, "%s", b64Signature);
+        signatureLength = strlen(signature);
+        
+        return 0;
+    }
+
+    /**
+     * @brief Clear all allocated memory
+     * 
+     */
     void clear()
     {
         if(header != nullptr)
@@ -99,10 +183,12 @@ public:
             free(out);
             out = nullptr;
         }
+        memoryAllocationDone = false;
     }
 
 private:
     Base64URL b64Handler;
+    bool memoryAllocationDone = false;
 };
 
 #endif //_CUSTOM_JWT_H_
