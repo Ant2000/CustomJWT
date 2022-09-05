@@ -87,5 +87,5 @@ For example:
 ```
 jwt.clear();
 ```
-Once this function is called, the allocate function will need to be called to cuntinue using the object.<br>
+Once this function is called, the allocate function will need to be called to continue using the object.<br>
 Note - This function is not meant to initialise class variables. It only deallocates memory. Continuously calling clear() and allocateJWTMemory() may cause heap fragmentation.
