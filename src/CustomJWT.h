@@ -34,14 +34,19 @@ public:
     /**
      * @brief Construct a new CustomJWT object
      * 
-     * @param secret The Encryption Key
+     * @param secret The Hashing key
      * @param maxPayloadLen Maximum expected length of payload
      * @param maxHeadLen Maximum expected length of header. Defaults to 40.
      * @param maxSigLen Maximum expected length of signature. Defaults to 32.
      * @param alg Encryption algorithm used. Defaults to HS256.
      * @param typ Header type. Defaults to JWT.
      */
-    CustomJWT(char *secret, size_t maxPayloadLen, size_t maxHeadLen = 40, size_t maxSigLen = 32, char *alg = "HS256", char *typ = "JWT")
+    CustomJWT(char *secret, 
+              size_t maxPayloadLen, 
+              size_t maxHeadLen = 40, 
+              size_t maxSigLen = 32, 
+              char *alg = "HS256", 
+              char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
@@ -50,16 +55,58 @@ public:
         this->maxPayloadLen = maxPayloadLen;
         this->maxSigLen = maxSigLen;
         this->generateSignaturePointer = nullptr;
+        this->staticAllocation = false;
     }
 
     /**
-     * @brief Construct a new CustomJWT object
+     * @brief Construct a new CustomJWT object providing own char arrays to store JWT output
      * 
-     * @param secret The Encryption Key
+     * @param secret The Hashing key
+     * @param header Pointer to where the JWT header will be stored
+     * @param headLen Size of header array
+     * @param payload Pointer to where the JWT payload will be stored
+     * @param payloadLen Size of payload array
+     * @param signature Pointer to where the JWT signature will be stored
+     * @param signatureLen Size of signature array
+     * @param out Pointer to where the final output token will be stored
+     * @param alg Encryption algorithm used. Defaults to HS256.
+     * @param typ Header type. Defaults to JWT.
+     */
+    CustomJWT(char *secret, 
+              char *header,
+              size_t headLen,
+              char *payload,
+              size_t payloadLen,
+              char *signature, 
+              size_t signatureLen,
+              char *out, 
+              char *alg = "HS256", 
+              char *typ = "JWT")
+    {
+        this->secret = (uint8_t *)secret;
+        this->alg = alg;
+        this->typ = typ;
+        this->header = header;
+        this->maxHeadLen = headLen;
+        this->payload = payload;
+        this->maxPayloadLen = payloadLen;
+        this->signature = signature;
+        this->maxSigLen = signatureLen;
+        this->out = out;
+        this->generateSignaturePointer = nullptr;
+        this->staticAllocation = true;
+        this->memoryAllocationDone = false;
+    }
+
+    /**
+     * @brief Construct a new CustomJWT object with a custom signature generation function
+     * 
+     * @param secret The Hashing key
      * @param maxPayloadLen Maximum expected length of payload
      * @param maxHeadLen Maximum expected length of header. Defaults to 40.
      * @param maxSigLen Maximum expected length of signature. Defaults to 32.
-     * @param alg Encryption algorithm used. Defaults to HS256.
+     * @param generateSignaturePointer Pointer to hashing function for signature
+     * @param alg Encryption algorithm used
      * @param typ Header type. Defaults to JWT.
      */
     CustomJWT(char *secret, 
@@ -77,14 +124,59 @@ public:
         this->maxPayloadLen = maxPayloadLen;
         this->maxSigLen = maxSigLen;
         this->generateSignaturePointer = generateSignaturePointer;
+        this->staticAllocation = false;
+    }
+
+    /**
+     * @brief Construct a new CustomJWT object with a custom signature generation function
+     * 
+     * @param secret The Hashing key
+     * @param header Pointer to where the JWT header will be stored
+     * @param headLen Size of header array
+     * @param payload Pointer to where the JWT payload will be stored
+     * @param payloadLen Size of payload array
+     * @param signature Pointer to where the JWT signature will be stored
+     * @param signatureLen Size of signature array
+     * @param out Pointer to where the final output token will be stored
+     * @param alg Hashing algorithm used
+     * @param generateSignaturePointer Pointer to hashing function for signature
+     * @param typ Header type. Defaults to JWT.
+     */
+    CustomJWT(char *secret, 
+              char *header,
+              size_t headLen,
+              char *payload,
+              size_t payloadLen,
+              char *signature, 
+              size_t signatureLen,
+              char *out,
+              char *alg,
+              void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen),
+              char *typ = "JWT")
+    {
+        this->secret = (uint8_t *)secret;
+        this->alg = alg;
+        this->typ = typ;
+        this->header = header;
+        this->maxHeadLen = headLen;
+        this->payload = payload;
+        this->maxPayloadLen = payloadLen;
+        this->signature = signature;
+        this->maxSigLen = signatureLen;
+        this->out = out;
+        this->generateSignaturePointer = generateSignaturePointer;
+        this->staticAllocation = true;
+        this->memoryAllocationDone = false;
     }
 
     /**
      * @brief Allocate memory for internal char pointers
-     * 
+     * @return true: Memory deallocated successfully \n false: Using Static allocation
      */
-    void allocateJWTMemory()
+    bool allocateJWTMemory()
     {
+        if(staticAllocation)
+            return false;
         b64HeaderLen = (size_t)(4.0 * (maxHeadLen / 3.0)) + 5;
         b64PayloadLen = (size_t)(4.0 * (maxPayloadLen / 3.0)) + 5;
         b64SigLen = (size_t)(4.0 * (maxSigLen / 3.0)) + 5;
@@ -96,6 +188,7 @@ public:
         out = (char *)malloc(maxOutputLen * sizeof(char));
 
         memoryAllocationDone = true;
+        return true;
     }
 
     /**
@@ -123,13 +216,14 @@ public:
      */
     bool encodeJWT(char *string)
     {
-        if(!memoryAllocationDone)
+        if(!memoryAllocationDone && !staticAllocation)
             return false;
 
-        memset(header, 0, sizeof(char) * b64HeaderLen);
-        memset(payload, 0, sizeof(char) * b64PayloadLen);
-        memset(signature, 0, sizeof(char) * b64SigLen);
-        memset(out, 0, sizeof(char) * maxOutputLen);
+        if(!staticAllocation)
+            memset(header, 0, sizeof(char) * b64HeaderLen);
+            memset(payload, 0, sizeof(char) * b64PayloadLen);
+            memset(signature, 0, sizeof(char) * b64SigLen);
+            memset(out, 0, sizeof(char) * maxOutputLen);
 
         char headerJSON[maxHeadLen];
         sprintf(headerJSON, "{\"alg\": \"%s\",\"typ\":\"%s\"}", alg, typ);
@@ -159,7 +253,7 @@ public:
      */
     int decodeJWT(char *string)
     {
-        if(!memoryAllocationDone)
+        if(!memoryAllocationDone && !staticAllocation)
             return 1;
         
         const char* delimiter = ".";
@@ -201,10 +295,10 @@ public:
         if(strncmp(b64Signature, testSignature, testSignatureLength) != 0) {
             return 3;
         }
-
-        memset(header, 0, sizeof(char) * b64HeaderLen);
-        memset(payload, 0, sizeof(char) * b64PayloadLen);
-        memset(signature, 0, sizeof(char) * b64SigLen);
+        if(!staticAllocation)
+            memset(header, 0, sizeof(char) * b64HeaderLen);
+            memset(payload, 0, sizeof(char) * b64PayloadLen);
+            memset(signature, 0, sizeof(char) * b64SigLen);
         
         Base64URL::base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
         Base64URL::base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
@@ -216,10 +310,12 @@ public:
 
     /**
      * @brief Clear all allocated memory
-     * 
+     * @return true: Memory deallocated successfully \n false: Using Static allocation
      */
-    void clear()
+    bool clear()
     {
+        if(staticAllocation)
+            return false;
         if(header != nullptr)
         {
             free(header);
@@ -241,10 +337,12 @@ public:
             out = nullptr;
         }
         memoryAllocationDone = false;
+        return true;
     }
 
 private:
     bool memoryAllocationDone = false;
+    bool staticAllocation = false;
     void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen);
 };
 
