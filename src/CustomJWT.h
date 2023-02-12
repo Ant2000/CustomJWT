@@ -31,18 +31,16 @@ public:
     size_t maxOutputLen;
     size_t outputLength;
 
-    Base64URL b64Handler;
-
-/**
- * @brief Construct a new CustomJWT object
- * 
- * @param secret The Encryption Key
- * @param maxPayloadLen Maximum expected length of payload
- * @param maxHeadLen Maximum expected length of header. Defaults to 40.
- * @param maxSigLen Maximum expected length of signature. Defaults to 32.
- * @param alg Encryption algorithm used. Defaults to HS256.
- * @param typ Header type. Defaults to JWT.
- */
+    /**
+     * @brief Construct a new CustomJWT object
+     * 
+     * @param secret The Encryption Key
+     * @param maxPayloadLen Maximum expected length of payload
+     * @param maxHeadLen Maximum expected length of header. Defaults to 40.
+     * @param maxSigLen Maximum expected length of signature. Defaults to 32.
+     * @param alg Encryption algorithm used. Defaults to HS256.
+     * @param typ Header type. Defaults to JWT.
+     */
     CustomJWT(char *secret, size_t maxPayloadLen, size_t maxHeadLen = 40, size_t maxSigLen = 32, char *alg = "HS256", char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
@@ -51,6 +49,34 @@ public:
         this->maxHeadLen = maxHeadLen;
         this->maxPayloadLen = maxPayloadLen;
         this->maxSigLen = maxSigLen;
+        this->generateSignaturePointer = nullptr;
+    }
+
+    /**
+     * @brief Construct a new CustomJWT object
+     * 
+     * @param secret The Encryption Key
+     * @param maxPayloadLen Maximum expected length of payload
+     * @param maxHeadLen Maximum expected length of header. Defaults to 40.
+     * @param maxSigLen Maximum expected length of signature. Defaults to 32.
+     * @param alg Encryption algorithm used. Defaults to HS256.
+     * @param typ Header type. Defaults to JWT.
+     */
+    CustomJWT(char *secret, 
+              size_t maxPayloadLen, 
+              size_t maxHeadLen, 
+              size_t maxSigLen, 
+              char *alg,
+              void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen),
+              char *typ = "JWT")
+    {
+        this->secret = (uint8_t *)secret;
+        this->alg = alg;
+        this->typ = typ;
+        this->maxHeadLen = maxHeadLen;
+        this->maxPayloadLen = maxPayloadLen;
+        this->maxSigLen = maxSigLen;
+        this->generateSignaturePointer = generateSignaturePointer;
     }
 
     /**
@@ -73,6 +99,22 @@ public:
     }
 
     /**
+     * @brief Function to generate signature for JWT
+     * @param output Pointer to where the final b64 encoded output will be stored
+     * @param outputLen Pointer to where the output length will be stored
+     * @param secret Pointer to the secret for HMAC encoding
+     * @param secretLen Length of secret
+     * @param data Pointer to the data from which signature is to be generated
+     * @param dataLen Size of data from which signature is to be generated
+    */
+    void generateSignature(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen) {
+        uint8_t hashed[SHA256_HASH];
+        memset(hashed, 0, SHA256_HASH);
+        hmac<SHA256>(hashed, SHA256_HASH, secret, secretLen, data, dataLen);
+        Base64URL::base64urlEncode(hashed, SHA256_HASH, output, outputLen);
+    }
+
+    /**
      * @brief Encode given string into JWT. Final output stored in out. 
      * 
      * @param string Data to be encoded
@@ -91,18 +133,18 @@ public:
 
         char headerJSON[maxHeadLen];
         sprintf(headerJSON, "{\"alg\": \"%s\",\"typ\":\"%s\"}", alg, typ);
-        b64Handler.base64urlEncode(headerJSON, strlen(headerJSON), header, &headerLength);
+        Base64URL::base64urlEncode(headerJSON, strlen(headerJSON), header, &headerLength);
 
-        b64Handler.base64urlEncode(string, strlen(string), payload, &payloadLength);
+        Base64URL::base64urlEncode(string, strlen(string), payload, &payloadLength);
         
         char toHash[payloadLength + headerLength + 3];
         memset(toHash, 0, payloadLength + headerLength + 3);
         sprintf(toHash, "%s.%s", header, payload);
         
-        uint8_t hashed[SHA256_HASH];
-        memset(hashed, 0, SHA256_HASH);
-        hmac<SHA256>(hashed, SHA256_HASH, secret, strlen((char *)secret), toHash, strlen(toHash));
-        b64Handler.base64urlEncode(hashed, SHA256_HASH, signature, &signatureLength);
+        if(this->generateSignaturePointer == nullptr)
+            generateSignature(signature, &signatureLength, secret, strlen((char *)secret), toHash, strlen(toHash));
+        else
+            generateSignaturePointer(signature, &signatureLength, secret, strlen((char *)secret), toHash, strlen(toHash));
         
         sprintf(out, "%s.%s", toHash, signature);
         outputLength = strlen(out);
@@ -137,9 +179,6 @@ public:
             return 2;
         if(strtok(0, delimiter) != 0)
             return 2;
-
-        uint8_t hashed[SHA256_HASH];
-        memset(hashed, 0, SHA256_HASH);
         
         char toCheckHash[strlen(b64Head) + strlen(b64Payload) + 3];
         memset(toCheckHash, 0, sizeof(toCheckHash));
@@ -149,8 +188,11 @@ public:
         size_t testSignatureLength;
 
         sprintf(toCheckHash, "%s.%s", b64Head, b64Payload);
-        hmac<SHA256>(hashed, SHA256_HASH, secret, strlen((char *)secret), toCheckHash, strlen(toCheckHash));
-        b64Handler.base64urlEncode(hashed, SHA256_HASH, testSignature, &testSignatureLength);
+
+        if(generateSignaturePointer == nullptr)
+            generateSignature(testSignature, &testSignatureLength, secret, strlen((char*)secret), toCheckHash, strlen(toCheckHash));
+        else
+            generateSignaturePointer(testSignature, &testSignatureLength, secret, strlen((char*)secret), toCheckHash, strlen(toCheckHash));
 
         if(testSignatureLength != strlen(b64Signature)){
             return 3;
@@ -164,8 +206,8 @@ public:
         memset(payload, 0, sizeof(char) * b64PayloadLen);
         memset(signature, 0, sizeof(char) * b64SigLen);
         
-        b64Handler.base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
-        b64Handler.base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
+        Base64URL::base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
+        Base64URL::base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
         sprintf(signature, "%s", b64Signature);
         signatureLength = strlen(signature);
         
@@ -203,6 +245,7 @@ public:
 
 private:
     bool memoryAllocationDone = false;
+    void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen);
 };
 
 #endif //_CUSTOM_JWT_H_

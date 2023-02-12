@@ -15,7 +15,7 @@ public:
      * @param[out] outputLen Length of the encoded string (optional parameter)
      **/
 
-    void base64urlEncode(const void *input, size_t inputLen, char *output,
+    static void base64urlEncode(const void *input, size_t inputLen, char *output,
                          size_t *outputLen);
 
     /**
@@ -27,7 +27,7 @@ public:
      * @return Decode success
      **/
 
-    bool base64urlDecode(const char *input, size_t inputLen, void *output,
+    static bool base64urlDecode(const char *input, size_t inputLen, void *output,
                          size_t *outputLen);
 };
 #endif
