@@ -69,6 +69,7 @@ public:
      * @param signature Pointer to where the JWT signature will be stored
      * @param signatureLen Size of signature array
      * @param out Pointer to where the final output token will be stored
+     * @param outLen Maximum output length
      * @param alg Encryption algorithm used. Defaults to HS256.
      * @param typ Header type. Defaults to JWT.
      */
@@ -79,7 +80,8 @@ public:
               size_t payloadLen,
               char *signature, 
               size_t signatureLen,
-              char *out, 
+              char *out,
+              size_t outLen,
               char *alg = "HS256", 
               char *typ = "JWT")
     {
@@ -93,6 +95,7 @@ public:
         this->signature = signature;
         this->maxSigLen = signatureLen;
         this->out = out;
+        this->maxOutputLen = outLen;
         this->generateSignaturePointer = nullptr;
         this->staticAllocation = true;
         this->memoryAllocationDone = false;
@@ -138,6 +141,7 @@ public:
      * @param signature Pointer to where the JWT signature will be stored
      * @param signatureLen Size of signature array
      * @param out Pointer to where the final output token will be stored
+     * @param outLen Maximum output length
      * @param alg Hashing algorithm used
      * @param generateSignaturePointer Pointer to hashing function for signature
      * @param typ Header type. Defaults to JWT.
@@ -150,6 +154,7 @@ public:
               char *signature, 
               size_t signatureLen,
               char *out,
+              size_t outLen,
               char *alg,
               void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen),
               char *typ = "JWT")
@@ -164,6 +169,7 @@ public:
         this->signature = signature;
         this->maxSigLen = signatureLen;
         this->out = out;
+        this->maxOutputLen = outLen;
         this->generateSignaturePointer = generateSignaturePointer;
         this->staticAllocation = true;
         this->memoryAllocationDone = false;
@@ -220,10 +226,19 @@ public:
             return false;
 
         if(!staticAllocation)
+        {
             memset(header, 0, sizeof(char) * b64HeaderLen);
             memset(payload, 0, sizeof(char) * b64PayloadLen);
             memset(signature, 0, sizeof(char) * b64SigLen);
             memset(out, 0, sizeof(char) * maxOutputLen);
+        }
+        else
+        {
+            memset(header, 0, sizeof(char) * maxHeadLen);
+            memset(payload, 0, sizeof(char) * maxPayloadLen);
+            memset(signature, 0, sizeof(char) * maxSigLen);
+            memset(out, 0, sizeof(char) * maxOutputLen);
+        }
 
         char headerJSON[maxHeadLen];
         sprintf(headerJSON, "{\"alg\": \"%s\",\"typ\":\"%s\"}", alg, typ);
@@ -295,10 +310,19 @@ public:
         if(strncmp(b64Signature, testSignature, testSignatureLength) != 0) {
             return 3;
         }
+        
         if(!staticAllocation)
+        {
             memset(header, 0, sizeof(char) * b64HeaderLen);
             memset(payload, 0, sizeof(char) * b64PayloadLen);
             memset(signature, 0, sizeof(char) * b64SigLen);
+        }
+        else
+        {
+            memset(header, 0, sizeof(char) * maxHeadLen);
+            memset(payload, 0, sizeof(char) * maxPayloadLen);
+            memset(signature, 0, sizeof(char) * maxSigLen);
+        }
         
         Base64URL::base64urlDecode(b64Head, strlen(b64Head), header, &headerLength);
         Base64URL::base64urlDecode(b64Payload, strlen(b64Payload), payload, &payloadLength);
