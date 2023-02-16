@@ -117,7 +117,7 @@ char key[] = "tester";
 After this, the arrays must be passed to the constructor:
 
 ```
-CustomJWT jwt(key, header, sizeof(header), payload, sizeof(payload), signature, sizeof(signature), out);
+CustomJWT jwt(key, header, sizeof(header), payload, sizeof(payload), signature, sizeof(signature), out, sizeof(out));
 ```
 After this, it will work exactly like the "It Just Works" method except there will be no need to call the <b>allocateJWTMemory</b> or <b>clear</b> functions.
 
@@ -188,6 +188,6 @@ void generateSignature(char *output, size_t *outputLen, void *secret, size_t sec
 ```
 Now that the relavent variables and functions have been created, they can be passed on the the constructor. 
 ```
-CustomJWT jwt(key, header, sizeof(header), payload, sizeof(payload), signature, sizeof(signature), out, "HS512", generateSignature);
+CustomJWT jwt(key, header, sizeof(header), payload, sizeof(payload), signature, sizeof(signature), out, sizeof(out), "HS512", generateSignature);
 ``` 
 After this, the usage is identical to Method 2, i.e. the "It Just Works" method minus the memory allocation related functions.
