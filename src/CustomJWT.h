@@ -11,8 +11,8 @@ class CustomJWT
 {
 public:
     uint8_t *secret;
-    char *alg;
-    char *typ;
+    const char *alg;
+    const char *typ;
     size_t maxHeadLen;
     size_t maxPayloadLen;
     size_t maxSigLen;
@@ -45,8 +45,8 @@ public:
               size_t maxPayloadLen, 
               size_t maxHeadLen = 40, 
               size_t maxSigLen = 32, 
-              char *alg = "HS256", 
-              char *typ = "JWT")
+              const char *alg = "HS256", 
+              const char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
@@ -82,8 +82,8 @@ public:
               size_t signatureLen,
               char *out,
               size_t outLen,
-              char *alg = "HS256", 
-              char *typ = "JWT")
+              const char *alg = "HS256", 
+              const char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
@@ -118,7 +118,7 @@ public:
               size_t maxSigLen, 
               char *alg,
               void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen),
-              char *typ = "JWT")
+              const char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
@@ -157,7 +157,7 @@ public:
               size_t outLen,
               char *alg,
               void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen),
-              char *typ = "JWT")
+              const char *typ = "JWT")
     {
         this->secret = (uint8_t *)secret;
         this->alg = alg;
