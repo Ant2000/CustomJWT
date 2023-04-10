@@ -41,7 +41,7 @@ jwt.allocateJWTMemory();
 ```
 
 To generate a JWT, we must call the EncodeJWT function. The resulting header, payload, signature and final output are stored in the class variables header, payload, signature and out respectively.<br>
-The function returns true if encoding is sucessfull and false if anything goes wrong.<br>
+The function returns true if encoding is successful and false if anything goes wrong.<br>
 For example: <br>
 
 ```
@@ -69,7 +69,7 @@ FinalOutput Length: 118
 
 <br>
 
-For decoding, the decodeJWT function is used. Similar to the encoding function, the decoded header, payload, and signature are stored in the chass variables header, payload and signature respectively. This function hoowever, returns an integer instead of a boolean value<br>
+For decoding, the decodeJWT function is used. Similar to the encoding function, the decoded header, payload, and signature are stored in the class variables header, payload and signature respectively. This function however, returns an integer instead of a boolean value<br>
 Return 0: The function ran without any problems<br>
 Return 1: Memory has not been allocated<br>
 Return 2: Input is not valid JWT<br>
@@ -103,7 +103,7 @@ Once this function is called, the allocate function will need to be called to co
 Note - This function is not meant to initialise class variables. It only deallocates memory. Continuously calling clear() and allocateJWTMemory() may cause heap fragmentation.<br><br>
 
 <h2 id="method-2">2. Providing own memory</h2>
-This method is for those who are not comfortable with using dynamic memory allocation in a microcontroller enviornment. This method is pretty much same as the "It Just Works" method except in this case, the variables for storage of JWT output are expected to be provided in the constructor. Additionally, since the memory allocation is static, the <b>allocateJWTMemory</b> and <b>clear</b> functions will not be used in this case.
+This method is for those who are not comfortable with using dynamic memory allocation in a microcontroller environment. This method is pretty much same as the "It Just Works" method except in this case, the variables for storage of JWT output are expected to be provided in the constructor. Additionally, since the memory allocation is static, the <b>allocateJWTMemory</b> and <b>clear</b> functions will not be used in this case.
 In this method, the memory must be initialised before creating the CustomJWT object. For example:
 
 ```
@@ -163,7 +163,7 @@ CustomJWT MyJWT(key, 256, 40, SHA512_HASH_LEN, "HS512", generateSignature);
 After this, the usage is identical to the "It Just Works" method.
 
 <h2 id="method-4">4. Providing own hashing function and memory</h2>
-This is for the situaton where one wants to both use static memory allocation and provide their own hashing function to generate the signature. This method is proactically a combination of methods 2 and 3. First one must create the hashing function and memory arrays and then they can be passed into the constructior for the CustomJWT object. For example:
+This is for the situation where one wants to both use static memory allocation and provide their own hashing function to generate the signature. This method is practically a combination of methods 2 and 3. First one must create the hashing function and memory arrays and then they can be passed into the constructer for the CustomJWT object. For example:
 
 ```
 #include <CustomJWT.h>
@@ -186,7 +186,7 @@ void generateSignature(char *output, size_t *outputLen, void *secret, size_t sec
     Base64URL::base64urlEncode(hashed, SHA512_HASH_LEN, output, outputLen);
 }
 ```
-Now that the relavent variables and functions have been created, they can be passed on the the constructor. 
+Now that the relevant variables and functions have been created, they can be passed on the constructor. 
 ```
 CustomJWT jwt(key, header, sizeof(header), payload, sizeof(payload), signature, sizeof(signature), out, sizeof(out), "HS512", generateSignature);
 ``` 
