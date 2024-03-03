@@ -1,8 +1,8 @@
 #ifndef _BASE_64_URL_H_
 #define _BASE_64_URL_H_
 
-#include <Arduino.h>
-
+#include <stdint.h>
+#include <stddef.h>
 class Base64URL
 {
 

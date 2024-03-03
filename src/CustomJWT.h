@@ -3,9 +3,8 @@
 
 #define SHA256_HASH 32
 
-#include <Crypto.h>
-#include <SHA256.h>
 #include "Base64URL.h"
+#include "hmac_sha256.h"
 
 class CustomJWT
 {
@@ -210,7 +209,7 @@ public:
     {
         uint8_t hashed[SHA256_HASH];
         memset(hashed, 0, SHA256_HASH);
-        hmac<SHA256>(hashed, SHA256_HASH, secret, secretLen, data, dataLen);
+        hmac_sha256(secret, secretLen, data, dataLen, hashed, SHA256_HASH);
         Base64URL::base64urlEncode(hashed, SHA256_HASH, output, outputLen);
     }
 
