@@ -1,5 +1,4 @@
-#ifndef _CUSTOM_JWT_H_
-#define _CUSTOM_JWT_H_
+#pragma once
 
 #define SHA256_HASH 32
 
@@ -209,7 +208,7 @@ public:
     {
         uint8_t hashed[SHA256_HASH];
         memset(hashed, 0, SHA256_HASH);
-        hmac_sha256(secret, secretLen, data, dataLen, hashed, SHA256_HASH);
+        custom_jwt_hmac_sha256(secret, secretLen, data, dataLen, hashed, SHA256_HASH);
         Base64URL::base64urlEncode(hashed, SHA256_HASH, output, outputLen);
     }
 
@@ -370,5 +369,3 @@ private:
     bool staticAllocation = false;
     void (*generateSignaturePointer)(char *output, size_t *outputLen, void *secret, size_t secretLen, void *data, size_t dataLen);
 };
-
-#endif //_CUSTOM_JWT_H_

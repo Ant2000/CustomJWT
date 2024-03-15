@@ -28,12 +28,12 @@ static void* sha256(const void* data,
                     const size_t outlen);
 
 // Declared in hmac_sha256.h
-size_t hmac_sha256(const void* key,
-                   const size_t keylen,
-                   const void* data,
-                   const size_t datalen,
-                   void* out,
-                   const size_t outlen) {
+size_t custom_jwt_hmac_sha256(const void* key,
+                              const size_t keylen,
+                              const void* data,
+                              const size_t datalen,
+                              void* out,
+                              const size_t outlen) {
   uint8_t k[SHA256_BLOCK_SIZE];
   uint8_t k_ipad[SHA256_BLOCK_SIZE];
   uint8_t k_opad[SHA256_BLOCK_SIZE];

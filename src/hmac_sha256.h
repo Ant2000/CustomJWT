@@ -3,8 +3,7 @@
     Originally written by https://github.com/h5p9sl
 */
 
-#ifndef _HMAC_SHA256_H_
-#define _HMAC_SHA256_H_
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +12,7 @@ extern "C" {
 #include <stddef.h>
 
 size_t  // Returns the number of bytes written to `out`
-hmac_sha256(
+custom_jwt_hmac_sha256(
     // [in]: The key and its length.
     //      Should be at least 32 bytes long for optimal security.
     const void* key,
@@ -32,5 +31,3 @@ hmac_sha256(
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
-
-#endif  // _HMAC_SHA256_H_

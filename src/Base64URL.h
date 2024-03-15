@@ -1,5 +1,4 @@
-#ifndef _BASE_64_URL_H_
-#define _BASE_64_URL_H_
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -30,4 +29,3 @@ public:
     static bool base64urlDecode(const char *input, size_t inputLen, void *output,
                          size_t *outputLen);
 };
-#endif
